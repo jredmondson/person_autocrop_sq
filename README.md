@@ -1,9 +1,9 @@
-# person_autocrop
-This is a Python script to auto-detect and auto-crop a person in a image.
+# person_autocrop_sq
+This is a Python script to auto-detect and auto-crop a person in a image to a perfect square. This script is tailored to image formats that we use internally on a project. Source images need to be named `name_#.jpg`, and the resulting person crops will be called `name_person_i_#.jpg`.
 
 This script uses **Tensorflow** and **SSD Mobilenet V2 (COCO)** to recognize people in a photo, then crop the photo to the single person.
 
-![example](https://github.com/northumber/person_autocrop/assets/17114557/bd3d352a-de33-4583-bba3-62ea77b844ab)
+![original](https://imgur.com/BqLAejF.png)![arrow](https://imgur.com/2aJQarq.png)![cropped](https://imgur.com/NHcBDyC.png)
 
 ### Specifications
 - Windows and Linux command-line auto-install scripts

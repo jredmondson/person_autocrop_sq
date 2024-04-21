@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import requests
+import re
 
 # Download model if not exist
 def download_model():
@@ -54,29 +55,70 @@ def object_detection(input_image_path, output_directory, output_format):
     # Crop the original image based on the detected persons' coordinates
     for i, coords in enumerate(person_coords):
         ymin, xmin, ymax, xmax = coords
-
+        
+        
         # Ensure valid coordinates
         if 0 <= ymin < ymax <= image.shape[0] and 0 <= xmin < xmax <= image.shape[1]:
-            if ymin - (ymin * 0.1) >= 0:
-                ymin = int((ymin - (ymin * 0.1)) * image.shape[0])
-            else:
-                ymin = int(ymin * image.shape[0])
+        
+            #print(f"LOG: image.shape[0]={image.shape[0]}, image.shape[1]={image.shape[1]}")
+            #print(f"LOG: xmin={xmin}, xmax={xmax}, ymin={ymin}, ymax={ymax}")
             
-            if int((ymax + (ymax * 0.1)) * image.shape[0]) <= image.shape[0]:
-                ymax = int((ymax + (ymax * 0.1)) * image.shape[0])
-            else:
-                ymax = int(ymax * image.shape[0])
+            # We need a square crop
+            ymin = int(ymin * image.shape[0]);
+            ymax = int(ymax * image.shape[0]);
             
-            if xmin - (xmin * 0.1) >= 0:
-                xmin = int((xmin - (xmin * 0.1)) * image.shape[1])
-            else:
-                xmin = int(xmin * image.shape[1])
+            xmin = int(xmin * image.shape[1]);
+            xmax = int(xmax * image.shape[1]);
             
-            if int((xmax + (xmax * 0.1)) * image.shape[1]) <= image.shape[1]:
-                xmax = int((xmax + (xmax * 0.1)) * image.shape[1])
-            else:
-                xmax = int(xmax * image.shape[1])
+            #print(f"LOG: after*image[shape] xmin={xmin}, xmax={xmax}, ymin={ymin}, ymax={ymax}")
+
+            width = xmax - xmin
+            height = ymax - ymin
             
+            length = int(max(width, height))
+            
+            #print(f"LOG: width={width}, height={height}, length={length}")
+            
+            if width < height:
+              center = int((xmax + xmin)/2)
+              growth = int(length/2)
+              
+              xmin = int(center - growth)
+              xmax = xmin + length;
+              
+              print(f"LOG: center={center}, growth={growth}, new_x={xmin}-{xmax}")
+
+              if xmin < 0:
+                xmin = 0
+                xmax = length
+              
+              if xmax > image.shape[1]:
+                xmin = image.shape[1] - length - 1
+                xmax = image.shape[1] - 1
+                
+            elif height < width:
+              center = int((ymax + ymin)/2)
+              growth = int(length/2)
+              
+              ymin = int(center - growth)
+              ymax = ymin + length;
+              
+              #print(f"LOG: center={center}, growth={growth}, new_y={ymin}-{ymax}")
+
+              if ymin < 0:
+                ymin = 0
+                ymax = length
+              
+              if ymax > image.shape[0]:
+                ymin = image.shape[0] - length - 1
+                ymax = image.shape[0] - 1
+              
+            #xmax = xmin + length;
+            #ymax = ymin + length;
+        
+            #print(f"LOG: xmin={xmin}, xmax={xmax}, ymin={ymin}, ymax={ymax}")
+
+        
             cropped_person = image[ymin:ymax, xmin:xmax, :]
 
             # Check if the cropped_person array is not empty
@@ -86,22 +128,26 @@ def object_detection(input_image_path, output_directory, output_format):
                     image_name = os.path.basename(input_image_path)
                     filename, extension = os.path.splitext(image_name)
                     
+                    p = re.compile('(.*)_([0-9]+)')
+                    m = p.match(filename)
+                    filename = m.group(1) + '_person_' + str(i) + '_' + m.group(2);
+                    
                     # Save the image using cv2.imwrite()
                     if output_format == "0":
-                        cv2.imwrite(f"{output_directory}/{i + 1}_{filename}.png", cropped_person)
-                        print(f"LOG: Image saved successfully to '{output_directory}/{i + 1}_{filename}.png'.")
+                        cv2.imwrite(f"{output_directory}/{filename}.png", cropped_person)
+                        print(f"LOG: Image saved successfully to '{output_directory}/{filename}.png'.")
                     elif output_format == "1":
-                        cv2.imwrite(f"{output_directory}/{i + 1}_{filename}.jpg", cropped_person)
-                        print(f"LOG: Image saved successfully to '{output_directory}/{i + 1}_{filename}.jpg'.")
+                        cv2.imwrite(f"{output_directory}/{filename}.jpg", cropped_person)
+                        print(f"LOG: Image saved successfully to '{output_directory}/{filename}.jpg'.")
                     elif output_format == "2":
-                        cv2.imwrite(f"{output_directory}/{i + 1}_{filename}.webp", cropped_person)
-                        print(f"LOG: Image saved successfully to '{output_directory}/{i + 1}_{filename}.webp'.")
+                        cv2.imwrite(f"{output_directory}/{filename}.webp", cropped_person)
+                        print(f"LOG: Image saved successfully to '{output_directory}/{filename}.webp'.")
                     elif output_format == "3":
-                        cv2.imwrite(f"{output_directory}/{i + 1}_{filename}.bmp", cropped_person)
-                        print(f"LOG: Image saved successfully to '{output_directory}/{i + 1}_{filename}.bmp'.")
+                        cv2.imwrite(f"{output_directory}/{filename}.bmp", cropped_person)
+                        print(f"LOG: Image saved successfully to '{output_directory}/{filename}.bmp'.")
                     else:
-                        cv2.imwrite(f"{output_directory}/{i + 1}_{image_name}", cropped_person)
-                        print(f"LOG: Image saved successfully to '{output_directory}/{i + 1}_{image_name}'.")
+                        cv2.imwrite(f"{output_directory}/{image_name}", cropped_person)
+                        print(f"LOG: Image saved successfully to '{output_directory}/{image_name}'.")
                 except Exception as e:
                     print(f"LOG: Error saving image: {e}")
             else:

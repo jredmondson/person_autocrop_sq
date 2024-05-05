@@ -36,7 +36,7 @@ def create_folder(output_directory):
             print(f"LOG: Error creating folder '{output_directory}': {e}")
 
 # Function to perform object detection and crop the image
-def object_detection(input_image_path, output_directory, output_format):
+def object_detection(input_image_path, output_directory, output_format, percent):
 
     # Read the input image
     image = cv2.imread(input_image_path)
@@ -76,48 +76,51 @@ def object_detection(input_image_path, output_directory, output_format):
             height = ymax - ymin
             
             length = int(max(width, height))
+            # increase person crop area by 40% (20% each side)
+            
+            if (percent < 0):
+              percent = 0.0;
+            else:
+              percent = percent / 100.0;
+            
+            extra = int(percent * length);
+            
+            length += extra;
+            
+            growth = int(length/2)
             
             #print(f"LOG: width={width}, height={height}, length={length}")
             
-            if width < height:
-              center = int((xmax + xmin)/2)
-              growth = int(length/2)
+            center = int((xmax + xmin)/2)
               
-              xmin = int(center - growth)
-              xmax = xmin + length;
+            xmin = int(center - growth)
+            xmax = xmin + length
+            
+            if xmin < 0:
+              xmin = 0
+              xmax = length
               
-              print(f"LOG: center={center}, growth={growth}, new_x={xmin}-{xmax}")
-
-              if xmin < 0:
-                xmin = 0
-                xmax = length
-              
-              if xmax > image.shape[1]:
-                xmin = image.shape[1] - length - 1
-                xmax = image.shape[1] - 1
+            if xmax > image.shape[1]:
+              xmin = image.shape[1] - length - 1
+              xmax = image.shape[1] - 1
                 
-            elif height < width:
-              center = int((ymax + ymin)/2)
-              growth = int(length/2)
+            center = int((ymax + ymin)/2)
+            
+            ymin = int(center - growth)
+            ymax = ymin + length;
+            
+            if ymin < 0:
+              ymin = 0
+              ymax = length
               
-              ymin = int(center - growth)
-              ymax = ymin + length;
+            if ymax > image.shape[0]:
+              ymin = image.shape[0] - length - 1
+              ymax = image.shape[0] - 1
               
+              #print(f"LOG: center={center}, growth={growth}, new_x={xmin}-{xmax}")
+
+
               #print(f"LOG: center={center}, growth={growth}, new_y={ymin}-{ymax}")
-
-              if ymin < 0:
-                ymin = 0
-                ymax = length
-              
-              if ymax > image.shape[0]:
-                ymin = image.shape[0] - length - 1
-                ymax = image.shape[0] - 1
-              
-            #xmax = xmin + length;
-            #ymax = ymin + length;
-        
-            #print(f"LOG: xmin={xmin}, xmax={xmax}, ymin={ymin}, ymax={ymax}")
-
         
             cropped_person = image[ymin:ymax, xmin:xmax, :]
 
@@ -176,6 +179,9 @@ if __name__ == "__main__":
     print("[4 or out of range] Input format will be preserved")
     output_format = input("Enter [0-4]: ")
     
+    print("Expand selector by [0-100]%:")
+    percent = float((input("Enter [0-100]: ")))
+    
     create_folder(output_directory)
 
     print("LOG: Running...")
@@ -183,5 +189,5 @@ if __name__ == "__main__":
     for filename in os.listdir(input_image_folder):
         if filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".jpeg") or filename.endswith(".webp") or filename.endswith(".bmp"):
             input_image_path = os.path.join(input_image_folder, filename)
-            object_detection(input_image_path, output_directory, output_format)
+            object_detection(input_image_path, output_directory, output_format, percent)
     print("LOG: Done.")

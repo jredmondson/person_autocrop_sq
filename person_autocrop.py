@@ -87,6 +87,12 @@ def object_detection(input_image_path, output_directory, output_format, percent)
             
             length += extra;
             
+            if (length > image.shape[0]):
+              length = image.shape[0]
+            
+            if (length > image.shape[1]):
+              length = image.shape[1]
+            
             growth = int(length/2)
             
             #print(f"LOG: width={width}, height={height}, length={length}")
@@ -104,6 +110,8 @@ def object_detection(input_image_path, output_directory, output_format, percent)
               xmin = image.shape[1] - length - 1
               xmax = image.shape[1] - 1
                 
+            #print(f"LOG: x: center={center}, growth={growth}, new_x={xmin}-{xmax}")
+
             center = int((ymax + ymin)/2)
             
             ymin = int(center - growth)
@@ -117,10 +125,8 @@ def object_detection(input_image_path, output_directory, output_format, percent)
               ymin = image.shape[0] - length - 1
               ymax = image.shape[0] - 1
               
-              #print(f"LOG: center={center}, growth={growth}, new_x={xmin}-{xmax}")
 
-
-              #print(f"LOG: center={center}, growth={growth}, new_y={ymin}-{ymax}")
+            #print(f"LOG: y: center={center}, growth={growth}, new_y={ymin}-{ymax}")
         
             cropped_person = image[ymin:ymax, xmin:xmax, :]
 

@@ -5,6 +5,8 @@ import tensorflow as tf
 import requests
 import re
 
+shape_dimensions = re.compile('([0-9]*):([0-9]*),\s*([0-9]*):([0-9]*)')
+
 # Download model if not exist
 def download_model():
     url = "https://drive.google.com/uc?id=1Ml260620LIKa-OrWqdzv_z99NJKixt3W"
@@ -25,6 +27,25 @@ if len(physical_devices) > 0:
 # Initialize model variable
 model = None
 
+def crop_to_parsed_dimensions(image, crop_dimensions):
+  m = shape_dimensions.match(crop_dimensions)
+  if m:
+    print("Cropping: {}->{}".format(image.shape, crop_dimensions))
+    y_min = int(m.group(1)) if m.group(1) else 0
+    y_max = int(m.group(2)) if m.group(2) else image.shape[0]
+
+    x_min = int(m.group(3)) if m.group(3) else 0
+    x_max = int(m.group(4)) if m.group(4) else image.shape[0]
+
+    result = image[y_min:y_max, x_min:x_max, :]
+
+    print("  new shape: {}".format(result.shape))
+
+    return result
+
+  else:
+    return image
+
 def create_folder(output_directory):
     # Check if the folder exists
     if not os.path.exists(output_directory):
@@ -36,10 +57,10 @@ def create_folder(output_directory):
             print(f"LOG: Error creating folder '{output_directory}': {e}")
 
 # Function to perform object detection and crop the image
-def object_detection(input_image_path, output_directory, output_format, percent):
+def object_detection(input_image_path, output_directory, output_format, percent, crop_dimensions):
 
     # Read the input image
-    image = cv2.imread(input_image_path)
+    image = crop_to_parsed_dimensions(cv2.imread(input_image_path), crop_dimensions)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image_expanded = np.expand_dims(image_rgb, axis=0).astype(np.uint8)
 
@@ -188,6 +209,9 @@ if __name__ == "__main__":
     print("Expand selector by [0-100]%:")
     percent = float((input("Enter [0-100]: ")))
     
+    print("Crop initial image shape (e.g., 100:500, :):")
+    crop_dimensions = (input("Enter new cropped shape, if any [:, :]: "))
+    
     create_folder(output_directory)
 
     print("LOG: Running...")
@@ -195,5 +219,5 @@ if __name__ == "__main__":
     for filename in os.listdir(input_image_folder):
         if filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".jpeg") or filename.endswith(".webp") or filename.endswith(".bmp"):
             input_image_path = os.path.join(input_image_folder, filename)
-            object_detection(input_image_path, output_directory, output_format, percent)
+            object_detection(input_image_path, output_directory, output_format, percent, crop_dimensions)
     print("LOG: Done.")

@@ -35,7 +35,7 @@ def crop_to_parsed_dimensions(image, crop_dimensions):
     y_max = int(m.group(2)) if m.group(2) else image.shape[0]
 
     x_min = int(m.group(3)) if m.group(3) else 0
-    x_max = int(m.group(4)) if m.group(4) else image.shape[0]
+    x_max = int(m.group(4)) if m.group(4) else image.shape[1]
 
     result = image[y_min:y_max, x_min:x_max, :]
 
